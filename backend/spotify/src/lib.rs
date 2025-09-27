@@ -1,0 +1,82 @@
+use rspotify::{model::AlbumId, prelude::*, ClientCredsSpotify, Credentials, OAuth, AuthCodeSpotify, scopes};
+use futures_util::TryStreamExt;
+use futures_util::pin_mut;
+use futures_util::StreamExt;
+
+#[tokio::main]
+pub async fn ClientCredExample() {
+    // You can use any logger for debugging.
+    // env_logger::init();
+
+    let creds = Credentials::from_env().unwrap();
+    let spotify = ClientCredsSpotify::new(creds);
+
+    // Obtaining the access token. Requires to be mutable because the internal
+    // token will be modified. We don't need OAuth for this specific endpoint,
+    // so `...` is used instead of `prompt_for_user_token`.
+    spotify.request_token().await.unwrap();
+
+    // Running the requests
+    let birdy_uri = AlbumId::from_uri("spotify:album:0sNOF9WDwhWunNAHPD3Baj").unwrap();
+    let albums = spotify.album(birdy_uri, None).await;
+
+    println!("Response: {albums:#?}");
+}
+
+#[tokio::main]
+pub async fn AuthTokenExample() {
+    // You can use any logger for debugging.
+
+    let creds = Credentials::from_env().unwrap();
+
+    // Using every possible scope
+    let scopes = scopes!(
+        "user-read-email",
+        "user-read-private",
+        "user-top-read",
+        "user-read-recently-played",
+        "user-follow-read",
+        "user-library-read",
+        "user-read-currently-playing",
+        "user-read-playback-state",
+        "user-read-playback-position",
+        "playlist-read-collaborative",
+        "playlist-read-private",
+        "user-follow-modify",
+        "user-library-modify",
+        "user-modify-playback-state",
+        "playlist-modify-public",
+        "playlist-modify-private",
+        "ugc-image-upload"
+    );
+    let oauth = OAuth::from_env(scopes).unwrap();
+    let spotify = AuthCodeSpotify::new(creds, oauth);
+    let url = spotify.get_authorize_url(false).unwrap();
+
+    // This function requires the `cli` feature enabled.
+    spotify.prompt_for_token(&url).await.unwrap();
+
+    let stream = spotify.current_user_playlists();
+    
+    // pin_mut!(stream);
+    // println!("Items (blocking):");
+    // while let Some(item) = stream.try_next().await.unwrap() {
+    //     println!("* {}", item.name);
+    // }
+
+    println!("\nItems (concurrent):");
+    stream
+        .try_for_each_concurrent(10, |item| async move {
+            println!("* {}", item.name);
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+    // let token = spotify.token.lock().await.unwrap();
+    // println!("Access token: {}", &token.as_ref().unwrap().access_token);
+    // println!(
+    //     "Refresh token: {}",
+    //     token.as_ref().unwrap().refresh_token.as_ref().unwrap()
+    // );
+}
