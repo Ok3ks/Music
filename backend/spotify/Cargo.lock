@@ -1303,6 +1303,7 @@ dependencies = [
  "dotenvy",
  "futures-util",
  "rspotify",
+ "rspotify-model",
  "tokio",
 ]
 
