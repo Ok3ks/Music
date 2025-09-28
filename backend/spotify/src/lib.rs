@@ -4,6 +4,10 @@ use futures_util::TryStreamExt;
 use futures_util::pin_mut;
 use futures_util::StreamExt;
 use rspotify_model::PlayableItem;
+use webscraping::{get_songs, get_lyrics};
+use std::time::Duration;
+use rand:: {Rng, thread_rng};
+use std::thread;
 
 #[tokio::main]
 pub async fn ClientCredExample() {
@@ -128,11 +132,31 @@ pub async fn get_playlist_info(id: &str) {
     for item in playlist.tracks.items {
         let x = item.track.unwrap();
         match x {
-            PlayableItem::Track(x) => println!("{}", x.name),
-            PlayableItem::Episode(_) => todo!(),
+            PlayableItem::Track(x) => {
+
+                let _base_url = String::from("https://www.musixmatch.com/");
+                let mut rng = thread_rng();
+                let mut count = 0;
+
+
+                let album_path = format!("lyrics/{1}/album-{0}", x.album.name, x.album.artists.get(0).unwrap().name);      
+                let songs = get_songs(album_path);
+                let random_seconds = rng.random_range(0..60);
+        
+        
+                for song in songs {
+                    let lyric = get_lyrics(_base_url.clone() + &song.clone().trim_start_matches('/'));
+                    count += 1;
+                    lyric.save();
+                    thread::sleep(Duration::from_millis(random_seconds));
+                }
+                thread::sleep(Duration::from_millis(10000));
+            },       
+                // println!("{} Album: {}, Artists:{}", x.name, x.album.name, x.album.artists.get(0).unwrap().name); // ToDo: Pipe into musixmatch function to extract lyrics.
+            PlayableItem::Episode(x) => println!("{} Description:{}", x.name, x.description),
             PlayableItem::Unknown(_) => println!("unavailable", )
 
-        }
+    };
     }
     // playlist.tracks.items
 }
