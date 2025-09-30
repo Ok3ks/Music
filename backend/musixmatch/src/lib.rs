@@ -70,8 +70,7 @@ fn _get_lyrics_internal(url: String) -> Lyrics {
     // let mut meaning= String::new();
     // let mut moods= String::new();
     // let mut rating =Vec::<String>::new();
-
-    let response = reqwest::blocking::get(&url);
+    let response = reqwest::blocking::get(&url);  //add userAgent
     let response = response.unwrap().text().unwrap();
     let document = scraper::Html::parse_document(&response);
 
@@ -79,7 +78,7 @@ fn _get_lyrics_internal(url: String) -> Lyrics {
     let selections = document
         .select(&lyrics_selector)
         .next()
-        .unwrap()
+        .unwrap() //handle fallback in cases where url does not match musixmatch format
         .text()
         .map(|s| s.to_string())
         .collect::<Vec<_>>()
@@ -258,24 +257,33 @@ fn _get_artist_name() -> Vec<String> {
     _albums
 }
 
+pub fn single_song_scrap(song: String) {
+    _single_song_scrap(&song);
+}
+
+pub fn _single_song_scrap(song: &String) {
+
+    let _base_url = String::from("https://www.musixmatch.com/");
+    let mut rng = thread_rng();
+
+    let random_seconds = rng.random_range(0..60);
+    let lyric = get_lyrics(_base_url.clone() + &song.clone().trim_start_matches('/'));
+    lyric.save();
+    thread::sleep(Duration::from_millis(random_seconds));
+}
+
 pub fn single_album_scrap(album: String) {
     _single_album_scrap(&album);
 }
 
 fn _single_album_scrap(album: &String) {
-    let _base_url = String::from("https://www.musixmatch.com/");
-    let mut count = 0;
 
-    let mut rng = thread_rng();
+    let _base_url = String::from("https://www.musixmatch.com/");
     let path = _base_url.clone() + &album.clone().trim_start_matches('/');
     let songs = get_songs(path);
-    let random_seconds = rng.random_range(0..60);
 
     for song in songs {
-        let lyric = get_lyrics(_base_url.clone() + &song.clone().trim_start_matches('/'));
-        count += 1;
-        lyric.save();
-        thread::sleep(Duration::from_millis(random_seconds));
+        single_song_scrap(song);
     }
     thread::sleep(Duration::from_millis(10000));
 }
@@ -286,7 +294,6 @@ pub fn single_artist_scrap(artist: String) {
 
 fn _single_artist_scrap(artist: &String) {
     let albums = get_albums(&artist);
-
     for element in albums {
         single_album_scrap(element);
     }
