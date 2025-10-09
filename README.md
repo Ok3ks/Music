@@ -64,3 +64,4 @@ Proposed Features (Ranked by order of implementation):
 
     - Finetuning a Seq2Seq Model, 
     - Finetuning an instruct large language model using (human - assistant pair).
+    - Training a model from scratch using masked language modelling, causal language modelling 
