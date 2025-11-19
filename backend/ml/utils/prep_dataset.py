@@ -4,7 +4,7 @@ from pydantic_ai import Agent
 from typing import Literal
 from dataclasses import dataclass
 
-def clean_lyrics_data(raw_data: dict) -> dict:
+def clean_lyrics_data(raw_data: dict) -> str:
     """Clean lyrics data by removing HTML, CSS, and metadata"""
     
     # Extract lyrics section
@@ -34,7 +34,7 @@ class SongDetails:
 songwriting_agent = Agent(
     'anthropic:claude-sonnet-4-5-20250929',
     output_type=SongDetails,  # type: ignore
-    retries=3,
+    retries=1,
     system_prompt=(
         """You are an expert at reverse-engineering creative prompts from completed works. Your task is to analyze song lyrics and generate the hypothetical input prompt that would have guided their creation.
 
@@ -71,13 +71,35 @@ songwriting_agent = Agent(
 if __name__ == "__main__" :
     import json
     import pathlib
-    import asyncio
 
-    obj = json.load(pathlib.Path.open("/Users/max/Code/Music/backend/musixmatch/lyrics/Passenger-feat-Birdy/Beautiful-Birds"))
-    lyrics = clean_lyrics_data(obj)
+    folder = pathlib.Path("/Users/max/Code/Music/backend/musixmatch/lyrics/passEnger")
+    dataset = "./dataset.json"
+    data = []
 
-    async def main():
-        agent_run = await songwriting_agent.run(user_prompt=f"Please reverse engineer this {lyrics}")
-        print(agent_run)
+    for file in folder.iterdir():
+        try :
+            obj = json.load(file.open())
+            lyrics = clean_lyrics_data(obj)
+        except json.JSONDecodeError :
+            pass
+
+        prompt =  songwriting_agent.run_sync(
+            user_prompt=f"Please reverse engineer this, {lyrics}, assuming the initial entry is a narrative/descriptive style post"
+            )
+        data.append({
+            "prompt": prompt.output.input, 
+            "output": lyrics,
+            "genre": prompt.output.genre,
+            "popular": prompt.output.popularity,
+            "lyrical_strength": prompt.output.lyrical_strength,
+            "title": prompt.output.popularity,
+            "artist": prompt.output.artist,
+            "year": prompt.output.year,
+            "target_audience": prompt.output.target_audience
+        })
+        print(f"{file} completed")
     
-    asyncio.run(main())
+    print(f"{len(data)} items in the dataset")
+    with open(dataset, "w") as outs:
+        json.dump(data, outs)
+        
