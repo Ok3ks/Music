@@ -6,10 +6,15 @@ authors = ["ok3ks <freelanceokeks@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10, <4.0"
+python = ">=3.11, <3.15"
 pydantic = "^2.12.4"
 pydantic-ai = "^1.20.0"
 asyncio = "^4.0.0"
+transformers = "^4.57.1"
+torch = "^2.9.1"
+wandb = "^0.23.0"
+tunix = "^0.0.0"
+qwix = "^0.1.4"
 
 
 [build-system]
