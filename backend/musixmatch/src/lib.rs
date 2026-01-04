@@ -170,7 +170,7 @@ fn _get_songs(
         album_name.pop().unwrap()
     );
 
-    println!("{}", album_path);
+    println!("{}", album_path); //use logger
     let album_path = Path::new(&album_path);
 
     if let Some(parent) = album_path.parent() {
@@ -302,8 +302,7 @@ mod tests {
                 }
                 Err(_) => {
                     println!(
-                        "{}",
-                        format!("error obtaining album for artist {0}", &artist_url)
+                        format_args("error obtaining album for artist {0}", &artist_url)
                     )
                 }
             },
@@ -323,8 +322,7 @@ mod tests {
                 }
                 Err(_) => {
                     println!(
-                        "{}",
-                        format!("error obtaining lyrics for song {0}", &album_url)
+                        format_args("error obtaining lyrics for song {0}", &album_url)
                     )
                 }
             },
@@ -348,8 +346,7 @@ mod tests {
                 }
                 Err(_) => {
                     println!(
-                        "{}",
-                        format!("error obtaining lyrics for song {0}", &song_url)
+                        format_args("error obtaining lyrics for song {0}", &song_url)
                     )
                 }
             },

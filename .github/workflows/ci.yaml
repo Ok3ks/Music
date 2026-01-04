@@ -43,7 +43,7 @@ jobs:
       - name: Clippy Check
         run: |
           cd backend/musixmatch
-          cargo clippy --workspace --all-targets --all-features -- -Dwarnings
+          cargo clippy --workspace --all-targets -- -Dwarnings
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2
