@@ -1,6 +1,3 @@
-
-
-
 use clap::{ArgAction, Parser};
 use rand::{rng, Rng};
 use serde::{Deserialize, Serialize};
@@ -73,50 +70,54 @@ fn _get_lyrics_internal(
 ) -> Result<Lyrics, String> {
     let parts = _parse_url_path(url)?;
     let sections = parts.as_slice();
-     {
-            let Some(artist) = sections.get(3) else {
-                return Err(String::from("No content here"));
-            };
-            let Some(title) = sections.get(4) else {
-                return Err(String::from("Empty"));
-            };
+    {
+        let Some(artist) = sections.get(3) else {
+            return Err(String::from("No content here"));
+        };
+        let Some(title) = sections.get(4) else {
+            return Err(String::from("Empty"));
+        };
 
-            let response = client.get(url).send().unwrap().text().unwrap_or_else(|_| "Error fetching lyrics".into());
+        let response = client
+            .get(url)
+            .send()
+            .unwrap()
+            .text()
+            .unwrap_or_else(|_| "Error fetching lyrics".into());
 
-            let document = scraper::Html::parse_document(&response);
+        let document = scraper::Html::parse_document(&response);
 
-            let lyrics_selector = scraper::Selector::parse("div").unwrap();
+        let lyrics_selector = scraper::Selector::parse("div").unwrap();
 
-            let selections = document
-                .select(&lyrics_selector)
-                .flat_map(|element| element.text()) // Flatten all text from all elements
-                .map(|s| s.to_string())
-                .collect::<Vec<_>>()
-                .join("\n");
-            let mut sections = selections.split("Writer");
-            let out = {
-                    let Some(lyric_section) = sections.next() else {
-                        return Err(format!("Error obtaining lyric section, for {0}", url));
-                    };
-
-                    let Some(other_section) = sections.next() else {
-                        return Err(format!("Error obtaining other_section, for {0}", url));
-                    };
-
-                    (lyric_section, other_section)
-                };
-
-
-            let song_lyrics = Lyrics {
-                artist: artist.to_string(),
-                title: title.to_string(),
-                lyrics_section: out.0.to_string(),
-                other_section: out.1.to_string(),
+        let selections = document
+            .select(&lyrics_selector)
+            .flat_map(|element| element.text()) // Flatten all text from all elements
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let mut sections = selections.split("Writer");
+        let out = {
+            let Some(lyric_section) = sections.next() else {
+                return Err(format!("Error obtaining lyric section, for {0}", url));
             };
 
-            Ok(song_lyrics)
-        }
+            let Some(other_section) = sections.next() else {
+                return Err(format!("Error obtaining other_section, for {0}", url));
+            };
+
+            (lyric_section, other_section)
+        };
+
+        let song_lyrics = Lyrics {
+            artist: artist.to_string(),
+            title: title.to_string(),
+            lyrics_section: out.0.to_string(),
+            other_section: out.1.to_string(),
+        };
+
+        Ok(song_lyrics)
     }
+}
 
 fn _parse_url_path(url: &str) -> Result<Vec<String>, String> {
     if url.is_empty() {
