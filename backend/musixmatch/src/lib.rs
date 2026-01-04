@@ -1,5 +1,5 @@
 use clap::{ArgAction, Parser};
-use rand::{thread_rng, Rng};
+use rand::{rng, Rng};
 use serde::{Deserialize, Serialize};
 use std::collections::*;
 use std::error::Error;
@@ -316,7 +316,7 @@ pub fn _single_song_scrap(
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
     let formed_url = String::from("https://www.musixmatch.com/") + &song.trim_start_matches('/');
-    let mut rng = thread_rng();
+    let mut rng = rng();
 
     let random_seconds = rng.random_range(0..1000);
     let lyric = get_lyrics(&formed_url, client)?;
