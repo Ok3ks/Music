@@ -302,7 +302,7 @@ mod tests {
                 }
                 Err(_) => {
                     println!("{}",
-                        format_args("error obtaining album for artist {0}", &artist_url)
+                        format_args!("error obtaining album for artist {0}", &artist_url)
                     )
                 }
             },
@@ -322,7 +322,7 @@ mod tests {
                 }
                 Err(_) => {
                     println!("{}",
-                        format_args("error obtaining lyrics for song {0}", &album_url)
+                        format_args!("error obtaining lyrics for song {0}", &album_url)
                     )
                 }
             },
@@ -346,7 +346,7 @@ mod tests {
                 }
                 Err(_) => {
                     println!("{}",
-                        format_args("error obtaining lyrics for song {0}", &song_url)
+                        format_args!("error obtaining lyrics for song {0}", &song_url)
                     )
                 }
             },
