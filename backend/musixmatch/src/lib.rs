@@ -47,19 +47,6 @@ pub struct Cli {
     pub artist: Vec<String>,
 }
 
-//TODO: replace with better search algorithm
-pub fn search<'a>(query: String, contents: String) -> Vec<String> {
-    let query = query.to_lowercase();
-
-    let results: Vec<String> = contents
-        .lines()
-        .map(|x| x.to_lowercase())
-        .filter(|x| x.contains(&query.to_lowercase()))
-        .collect();
-
-    results
-}
-
 pub fn get_lyrics(url: &String, client: &reqwest::blocking::Client) -> Result<Lyrics, String> {
     _get_lyrics_internal(url, client)
 }
@@ -250,7 +237,7 @@ pub fn _single_song_scrap(
     Ok(())
 }
 
-pub fn single_album_scrap(album: &String, client: &reqwest::blocking::Client) {
+pub fn single_album_scrap(album: &str, client: &reqwest::blocking::Client) {
     let _ = _single_album_scrap(album, client);
 }
 
@@ -273,12 +260,12 @@ fn _single_album_scrap(
     Ok(())
 }
 
-pub fn single_artist_scrap(artist: &String, client: &reqwest::blocking::Client) {
+pub fn single_artist_scrap(artist: &str, client: &reqwest::blocking::Client) {
     let _ = _single_artist_scrap(artist, client);
 }
 
 fn _single_artist_scrap(
-    artist: &String,
+    artist: &str,
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
     let albums = get_albums(artist, client)?;
