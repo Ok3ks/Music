@@ -26,7 +26,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: cargo build
-        run: cargo build --manifest-path musixmatch/Cargo.toml --lockfile --manifest-path musixmatch/Cargo.lock --all-targets --all-features
+        run: cargo build --manifest-path musixmatch/Cargo.toml --all-targets --all-features
 
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
