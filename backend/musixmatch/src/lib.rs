@@ -301,7 +301,8 @@ mod tests {
                     }
                 }
                 Err(_) => {
-                    println!("{}",
+                    println!(
+                        "{}",
                         format_args!("error obtaining album for artist {0}", &artist_url)
                     )
                 }
@@ -321,7 +322,8 @@ mod tests {
                     }
                 }
                 Err(_) => {
-                    println!("{}",
+                    println!(
+                        "{}",
                         format_args!("error obtaining lyrics for song {0}", &album_url)
                     )
                 }
@@ -345,7 +347,8 @@ mod tests {
                     assert!(songs.other_section.contains("Meaning"));
                 }
                 Err(_) => {
-                    println!("{}",
+                    println!(
+                        "{}",
                         format_args!("error obtaining lyrics for song {0}", &song_url)
                     )
                 }
