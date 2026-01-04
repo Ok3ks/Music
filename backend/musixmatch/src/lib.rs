@@ -243,7 +243,11 @@ pub fn _single_song_scrap(
     song: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
-    let formed_url:String = format!("https://www.musixmatch.com/{0}", song.trim_start_matches('/')).to_string();
+    let formed_url: String = format!(
+        "https://www.musixmatch.com/{0}",
+        song.trim_start_matches('/')
+    )
+    .to_string();
     let mut rng = rng();
 
     let random_seconds = rng.random_range(0..1000);
@@ -261,7 +265,11 @@ fn _single_album_scrap(
     album: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
-    let path: String = format!("https://www.musixmatch.com/{0}", album.trim_start_matches('/')).to_string();
+    let path: String = format!(
+        "https://www.musixmatch.com/{0}",
+        album.trim_start_matches('/')
+    )
+    .to_string();
     let songs = get_songs(&path, &client)?;
 
     for song in songs {
