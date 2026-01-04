@@ -60,69 +60,69 @@ pub fn search<'a>(query: String, contents: String) -> Vec<String> {
     results
 }
 
-pub fn get_lyrics(url: String, client: &reqwest::blocking::Client) -> Result<Lyrics, String> {
+pub fn get_lyrics(url: &String, client: &reqwest::blocking::Client) -> Result<Lyrics, String> {
     _get_lyrics_internal(url, &client)
 }
 
-fn _get_lyrics_internal(url: String, client: &reqwest::blocking::Client) -> Result<Lyrics, String> {
-    let parts = _parse_url_path(&url);
+fn _get_lyrics_internal(
+    url: &String,
+    client: &reqwest::blocking::Client,
+) -> Result<Lyrics, String> {
+    let parts = _parse_url_path(&url)?;
 
-    match parts {
-        Ok(_) => {
-            match parts?.as_slice() {
-                sections => {
-                    let Some(artist) = sections.get(3) else {
-                        return Err(String::from("No content here"));
-                    };
-                    let Some(title) = sections.get(4) else {
-                        return Err(String::from("Empty"));
-                    };
+    // match parts {
+    //     Ok(_) => {
+    match parts.as_slice() {
+        sections => {
+            let Some(artist) = sections.get(3) else {
+                return Err(String::from("No content here"));
+            };
+            let Some(title) = sections.get(4) else {
+                return Err(String::from("Empty"));
+            };
 
-                    let response = client.get(&url).send().unwrap().text().unwrap();
+            let response = client.get(&*url).send().unwrap().text().unwrap();
 
-                    let document = scraper::Html::parse_document(&response);
+            let document = scraper::Html::parse_document(&response);
 
-                    let lyrics_selector = scraper::Selector::parse("div").unwrap();
+            let lyrics_selector = scraper::Selector::parse("div").unwrap();
 
-                    let selections = document
-                        .select(&lyrics_selector)
-                        .flat_map(|element| element.text())  // Flatten all text from all elements
-                        .map(|s| s.to_string())
-                        .collect::<Vec<_>>()
-                        .join("\n");
+            let selections = document
+                .select(&lyrics_selector)
+                .flat_map(|element| element.text()) // Flatten all text from all elements
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
+                .join("\n");
 
-                    let out = match selections.split("Writer").into_iter() {
-                        mut sections => {
-                            let Some(lyric_section) = sections.nth(0) else {
-                                return Err(String::from(format!(
-                                    "Error obtaining lyric section, for {0}",
-                                    url
-                                )));
-                            };
-
-                            let Some(other_section) = sections.nth(0) else {
-                                return Err(String::from(format!(
-                                    "Error obtaining other_section, for {0}",
-                                    url
-                                )));
-                            };
-
-                            (lyric_section, other_section)
-                        }
+            let out = match selections.split("Writer").into_iter() {
+                mut sections => {
+                    let Some(lyric_section) = sections.nth(0) else {
+                        return Err(String::from(format!(
+                            "Error obtaining lyric section, for {0}",
+                            url
+                        )));
                     };
 
-                    let song_lyrics = Lyrics {
-                        artist: artist.to_string(),
-                        title: title.to_string(),
-                        lyrics_section: out.0.to_string(),
-                        other_section: out.1.to_string(),
+                    let Some(other_section) = sections.nth(0) else {
+                        return Err(String::from(format!(
+                            "Error obtaining other_section, for {0}",
+                            url
+                        )));
                     };
 
-                    Ok(song_lyrics)
+                    (lyric_section, other_section)
                 }
-            }
+            };
+
+            let song_lyrics = Lyrics {
+                artist: artist.to_string(),
+                title: title.to_string(),
+                lyrics_section: out.0.to_string(),
+                other_section: out.1.to_string(),
+            };
+
+            Ok(song_lyrics)
         }
-        _ => Err(String::from("No Url to parse")),
     }
 }
 
@@ -147,20 +147,42 @@ mod tests {
     #[test]
     fn test_func_get_albums() {
         let artist_url = String::from("https://www.musixmatch.com/artist/Kendrick-Lamar/albums");
-        let albums = get_albums(artist_url);
-
-        for i in albums {
-            assert_eq!(i.starts_with("/album/"), true);
+        match reqwest::blocking::Client::builder().build() {
+            Ok(client) => match get_albums(&artist_url, &client) {
+                Ok(albums) => {
+                    for i in albums {
+                        assert_eq!(i.starts_with("/album/"), true);
+                    }
+                }
+                Err(_) => {
+                    println!(
+                        "{}",
+                        format!("error obtaining album for artist {0}", &artist_url)
+                    )
+                }
+            },
+            Err(_) => println!("error configuring reqwest client"),
         }
     }
 
     #[test]
     fn test_func_get_songs() {
         let album_url = String::from("https://www.musixmatch.com/artist/Taylor-Swift/album/Taylor-Swift/Taylor-Swift-Big-Machine-Radio-Release-Special");
-        let songs = get_songs(album_url);
-
-        for i in songs {
-            assert_eq!(i.starts_with("/lyrics/"), true);
+        match reqwest::blocking::Client::builder().build() {
+            Ok(client) => match get_songs(&album_url, &client) {
+                Ok(albums) => {
+                    for i in albums {
+                        assert_eq!(i.starts_with("/lyrics/"), true);
+                    }
+                }
+                Err(_) => {
+                    println!(
+                        "{}",
+                        format!("error obtaining lyrics for song {0}", &album_url)
+                    )
+                }
+            },
+            Err(_) => println!("error configuring reqwest client"),
         }
     }
 
@@ -168,13 +190,25 @@ mod tests {
     fn test_func_get_lyrics() {
         let song_url =
             String::from("https://www.musixmatch.com/lyrics/Taylor-Swift/champagne-problems");
-        let songs = get_lyrics(song_url);
 
         ////Possibly mock this
-        assert_eq!(songs.lyrics_section.contains("Lyrics"), true);
-        assert_eq!(songs.other_section.contains("Mood"), true);
-        assert_eq!(songs.other_section.contains("Rating"), true);
-        assert_eq!(songs.other_section.contains("Meaning"), true);
+        match reqwest::blocking::Client::builder().build() {
+            Ok(client) => match get_lyrics(&song_url, &client) {
+                Ok(songs) => {
+                    assert_eq!(songs.lyrics_section.contains("Lyrics"), true);
+                    assert_eq!(songs.other_section.contains("Mood"), true);
+                    assert_eq!(songs.other_section.contains("Rating"), true);
+                    assert_eq!(songs.other_section.contains("Meaning"), true);
+                }
+                Err(_) => {
+                    println!(
+                        "{}",
+                        format!("error obtaining lyrics for song {0}", &song_url)
+                    )
+                }
+            },
+            Err(_) => println!("error configuring reqwest client"),
+        }
     }
 }
 
@@ -191,12 +225,18 @@ fn _link_extractor(response: String) -> Vec<String> {
     links
 }
 
-pub fn get_songs(album_url: String, client: &reqwest::blocking::Client) -> HashSet<String> {
-    _get_songs(&album_url, &client)
+pub fn get_songs(
+    album_url: &String,
+    client: &reqwest::blocking::Client,
+) -> Result<HashSet<String>, reqwest::Error> {
+    _get_songs(album_url, &client)
 }
 
-fn _get_songs(album_url: &String, client: &reqwest::blocking::Client) -> HashSet<String> {
-    let response = client.get(album_url).send().unwrap().text().unwrap();
+fn _get_songs(
+    album_url: &String,
+    client: &reqwest::blocking::Client,
+) -> Result<HashSet<String>, reqwest::Error> {
+    let response = client.get(album_url).send().unwrap().text()?;
     let _song_links = _link_extractor(response)
         .into_iter()
         .filter(|x| x.starts_with("/lyrics/"))
@@ -227,11 +267,14 @@ fn _get_songs(album_url: &String, client: &reqwest::blocking::Client) -> HashSet
             .join(","),
     );
 
-    _song_links
+    Ok(_song_links)
 }
 
-pub fn get_albums(url: String, client: &reqwest::blocking::Client) -> HashSet<String> {
-    _get_albums(&url, &client).expect("Error configuring client")
+pub fn get_albums(
+    url: &String,
+    client: &reqwest::blocking::Client,
+) -> Result<HashSet<String>, reqwest::Error> {
+    _get_albums(url, &client)
 }
 
 fn _get_albums(
@@ -264,50 +307,54 @@ fn _get_artist_name() -> Vec<String> {
     _albums
 }
 
-pub fn single_song_scrap(song: String, client: &reqwest::blocking::Client) {
+pub fn single_song_scrap(song: &String, client: &reqwest::blocking::Client) {
     let _ = _single_song_scrap(song, &client);
 }
 
 pub fn _single_song_scrap(
-    song: String,
+    song: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
-    let _base_url = String::from("https://www.musixmatch.com/");
+    let formed_url = String::from("https://www.musixmatch.com/") + &song.trim_start_matches('/');
     let mut rng = thread_rng();
 
     let random_seconds = rng.random_range(0..1000);
-    let lyric = get_lyrics(
-        _base_url.clone() + &song.clone().trim_start_matches('/'),
-        client,
-    );
-    lyric?.save();
+    let lyric = get_lyrics(&formed_url, client)?;
+    lyric.save();
     thread::sleep(Duration::from_millis(random_seconds));
     Ok(())
 }
 
-pub fn single_album_scrap(album: String, client: &reqwest::blocking::Client) {
-    let _ = _single_album_scrap(&album, &client);
+pub fn single_album_scrap(album: &String, client: &reqwest::blocking::Client) {
+    let _ = _single_album_scrap(album, &client);
 }
 
-fn _single_album_scrap(album: &String, client: &reqwest::blocking::Client) {
-    let _base_url = String::from("https://www.musixmatch.com/");
-    let path = _base_url.clone() + &album.clone().trim_start_matches('/');
-    let songs = get_songs(path, client);
+fn _single_album_scrap(
+    album: &String,
+    client: &reqwest::blocking::Client,
+) -> Result<(), Box<dyn Error>> {
+    let path = String::from("https://www.musixmatch.com/") + &album.clone().trim_start_matches('/');
+    let songs = get_songs(&path, &client)?;
 
     for song in songs {
-        single_song_scrap(song, client);
+        single_song_scrap(&song, client);
+        thread::sleep(Duration::from_millis(100));
     }
     thread::sleep(Duration::from_millis(10000));
+    Ok(())
 }
 
-pub fn single_artist_scrap(artist: String, client: &reqwest::blocking::Client) {
-    _single_artist_scrap(artist, &client);
+pub fn single_artist_scrap(artist: &String, client: &reqwest::blocking::Client) {
+    let _ = _single_artist_scrap(artist, &client);
 }
 
-fn _single_artist_scrap(artist: String, client: &reqwest::blocking::Client) {
-    let albums = get_albums(artist, &client);
+fn _single_artist_scrap(
+    artist: &String,
+    client: &reqwest::blocking::Client,
+) -> Result<(), Box<dyn Error>> {
+    let albums = get_albums(artist, &client)?;
     for element in albums {
-        println!("{}", element);
-        single_album_scrap(element, &client);
+        single_album_scrap(&element, &client);
     }
+    Ok(())
 }

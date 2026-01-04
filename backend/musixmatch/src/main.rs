@@ -12,7 +12,7 @@ fn main() -> Result<(), reqwest::Error> {
 
     _album_url
         .into_par_iter()
-        .for_each(|x| single_artist_scrap(x.to_string(), &client));
+        .for_each(|x| single_artist_scrap(&x.to_string(), &client));
 
     Ok(())
 }
