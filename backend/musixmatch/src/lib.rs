@@ -68,10 +68,7 @@ fn _get_lyrics_internal(
     url: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<Lyrics, String> {
-    let parts = _parse_url_path(&url)?;
-
-    // match parts {
-    //     Ok(_) => {
+    let parts = _parse_url_path(url)?;
     match parts.as_slice() {
         sections => {
             let Some(artist) = sections.get(3) else {
@@ -81,7 +78,7 @@ fn _get_lyrics_internal(
                 return Err(String::from("Empty"));
             };
 
-            let response = client.get(&*url).send().unwrap().text().unwrap();
+            let response = client.get(url).send().unwrap().text().unwrap();
 
             let document = scraper::Html::parse_document(&response);
 
@@ -94,20 +91,20 @@ fn _get_lyrics_internal(
                 .collect::<Vec<_>>()
                 .join("\n");
 
-            let out = match selections.split("Writer").into_iter() {
+            let out = match selections.split("Writer") {
                 mut sections => {
-                    let Some(lyric_section) = sections.nth(0) else {
-                        return Err(String::from(format!(
+                    let Some(lyric_section) = sections.next() else {
+                        return Err(format!(
                             "Error obtaining lyric section, for {0}",
                             url
-                        )));
+                        ));
                     };
 
-                    let Some(other_section) = sections.nth(0) else {
-                        return Err(String::from(format!(
+                    let Some(other_section) = sections.next() else {
+                        return Err(format!(
                             "Error obtaining other_section, for {0}",
                             url
-                        )));
+                        ));
                     };
 
                     (lyric_section, other_section)
@@ -270,7 +267,7 @@ fn _single_album_scrap(
         album.trim_start_matches('/')
     )
     .to_string();
-    let songs = get_songs(&path, &client)?;
+    let songs = get_songs(&path, client)?;
 
     for song in songs {
         single_song_scrap(&song, client);
@@ -281,16 +278,16 @@ fn _single_album_scrap(
 }
 
 pub fn single_artist_scrap(artist: &String, client: &reqwest::blocking::Client) {
-    let _ = _single_artist_scrap(artist, &client);
+    let _ = _single_artist_scrap(artist, client);
 }
 
 fn _single_artist_scrap(
     artist: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
-    let albums = get_albums(artist, &client)?;
+    let albums = get_albums(artist, client)?;
     for element in albums {
-        single_album_scrap(&element, &client);
+        single_album_scrap(&element, client);
     }
     Ok(())
 }
@@ -306,7 +303,7 @@ mod tests {
             Ok(client) => match get_albums(&artist_url, &client) {
                 Ok(albums) => {
                     for i in albums {
-                        assert_eq!(i.starts_with("/album/"), true);
+                        assert!(i.starts_with("/album/"));
                     }
                 }
                 Err(_) => {
@@ -327,7 +324,7 @@ mod tests {
             Ok(client) => match get_songs(&album_url, &client) {
                 Ok(albums) => {
                     for i in albums {
-                        assert_eq!(i.starts_with("/lyrics/"), true);
+                        assert!(i.starts_with("/lyrics/"));
                     }
                 }
                 Err(_) => {
@@ -350,10 +347,10 @@ mod tests {
         match reqwest::blocking::Client::builder().build() {
             Ok(client) => match get_lyrics(&song_url, &client) {
                 Ok(songs) => {
-                    assert_eq!(songs.lyrics_section.contains("Lyrics"), true);
-                    assert_eq!(songs.other_section.contains("Mood"), true);
-                    assert_eq!(songs.other_section.contains("Rating"), true);
-                    assert_eq!(songs.other_section.contains("Meaning"), true);
+                    assert!(songs.lyrics_section.contains("Lyrics"));
+                    assert!(songs.other_section.contains("Mood"));
+                    assert!(songs.other_section.contains("Rating"));
+                    assert!(songs.other_section.contains("Meaning"));
                 }
                 Err(_) => {
                     println!(
