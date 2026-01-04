@@ -82,7 +82,7 @@ fn _get_lyrics_internal(
                 return Err(String::from("Empty"));
             };
 
-            let response = client.get(url).send().unwrap().text().unwrap_or_else("Error fetching lyrics");
+            let response = client.get(url).send().unwrap().text().unwrap_or_else(|| "Error fetching lyrics".into());
 
             let document = scraper::Html::parse_document(&response);
 
