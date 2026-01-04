@@ -67,7 +67,6 @@ pub fn get_lyrics(url: &String, client: &reqwest::blocking::Client) -> Result<Ly
     _get_lyrics_internal(url, client)
 }
 
-#![deny(clippy::match_single_binding)]
 fn _get_lyrics_internal(
     url: &String,
     client: &reqwest::blocking::Client,
@@ -82,7 +81,7 @@ fn _get_lyrics_internal(
                 return Err(String::from("Empty"));
             };
 
-            let response = client.get(url).send().unwrap().text().unwrap_or_else(|| "Error fetching lyrics".into());
+            let response = client.get(url).send().unwrap().text().unwrap_or_else(|_| "Error fetching lyrics".into());
 
             let document = scraper::Html::parse_document(&response);
 
