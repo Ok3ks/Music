@@ -1,10 +1,5 @@
-#![deny(clippy::indexing_slicing)]
-#![deny(clippy::fallible_impl_from)]
-#![deny(clippy::wildcard_enum_match_arm)]
-#![deny(clippy::unneeded_field_pattern)]
-#![deny(clippy::fn_params_excessive_bools)]
-#![deny(clippy::needless_borrow)]
-#![deny(clippy::match_single_binding)]
+
+
 
 use clap::{ArgAction, Parser};
 use rand::{rng, Rng};
@@ -69,16 +64,17 @@ pub fn search<'a>(query: String, contents: String) -> Vec<String> {
 }
 
 pub fn get_lyrics(url: &String, client: &reqwest::blocking::Client) -> Result<Lyrics, String> {
-    _get_lyrics_internal(url, &client)
+    _get_lyrics_internal(url, client)
 }
 
+#![deny(clippy::match_single_binding)]
 fn _get_lyrics_internal(
     url: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<Lyrics, String> {
     let parts = _parse_url_path(url)?;
-    match parts.as_slice() {
-        sections => {
+    let sections = parts.as_slice();
+     {
             let Some(artist) = sections.get(3) else {
                 return Err(String::from("No content here"));
             };
@@ -86,7 +82,7 @@ fn _get_lyrics_internal(
                 return Err(String::from("Empty"));
             };
 
-            let response = client.get(url).send().unwrap().text().unwrap();
+            let response = client.get(url).send().unwrap().text().unwrap_or_else("Error fetching lyrics");
 
             let document = scraper::Html::parse_document(&response);
 
@@ -98,9 +94,8 @@ fn _get_lyrics_internal(
                 .map(|s| s.to_string())
                 .collect::<Vec<_>>()
                 .join("\n");
-
-            let out = match selections.split("Writer") {
-                mut sections => {
+            let mut sections = selections.split("Writer");
+            let out = {
                     let Some(lyric_section) = sections.next() else {
                         return Err(format!("Error obtaining lyric section, for {0}", url));
                     };
@@ -110,8 +105,8 @@ fn _get_lyrics_internal(
                     };
 
                     (lyric_section, other_section)
-                }
-            };
+                };
+
 
             let song_lyrics = Lyrics {
                 artist: artist.to_string(),
@@ -123,7 +118,6 @@ fn _get_lyrics_internal(
             Ok(song_lyrics)
         }
     }
-}
 
 fn _parse_url_path(url: &str) -> Result<Vec<String>, String> {
     if url.is_empty() {
@@ -156,7 +150,7 @@ pub fn get_songs(
     album_url: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<HashSet<String>, reqwest::Error> {
-    _get_songs(album_url, &client)
+    _get_songs(album_url, client)
 }
 
 fn _get_songs(
@@ -201,7 +195,7 @@ pub fn get_albums(
     url: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<HashSet<String>, reqwest::Error> {
-    _get_albums(url, &client)
+    _get_albums(url, client)
 }
 
 fn _get_albums(
@@ -239,7 +233,7 @@ pub fn single_song_scrap(song: &String, client: &reqwest::blocking::Client) {
 }
 
 pub fn _single_song_scrap(
-    song: &String,
+    song: &str,
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
     let formed_url: String = format!(
@@ -261,7 +255,7 @@ pub fn single_album_scrap(album: &String, client: &reqwest::blocking::Client) {
 }
 
 fn _single_album_scrap(
-    album: &String,
+    album: &str,
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
     let path: String = format!(
