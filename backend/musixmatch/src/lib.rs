@@ -140,78 +140,6 @@ fn _parse_url_path(url: &str) -> Result<Vec<String>, String> {
     Ok(parts)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_func_get_albums() {
-        let artist_url = String::from("https://www.musixmatch.com/artist/Kendrick-Lamar/albums");
-        match reqwest::blocking::Client::builder().build() {
-            Ok(client) => match get_albums(&artist_url, &client) {
-                Ok(albums) => {
-                    for i in albums {
-                        assert_eq!(i.starts_with("/album/"), true);
-                    }
-                }
-                Err(_) => {
-                    println!(
-                        "{}",
-                        format!("error obtaining album for artist {0}", &artist_url)
-                    )
-                }
-            },
-            Err(_) => println!("error configuring reqwest client"),
-        }
-    }
-
-    #[test]
-    fn test_func_get_songs() {
-        let album_url = String::from("https://www.musixmatch.com/artist/Taylor-Swift/album/Taylor-Swift/Taylor-Swift-Big-Machine-Radio-Release-Special");
-        match reqwest::blocking::Client::builder().build() {
-            Ok(client) => match get_songs(&album_url, &client) {
-                Ok(albums) => {
-                    for i in albums {
-                        assert_eq!(i.starts_with("/lyrics/"), true);
-                    }
-                }
-                Err(_) => {
-                    println!(
-                        "{}",
-                        format!("error obtaining lyrics for song {0}", &album_url)
-                    )
-                }
-            },
-            Err(_) => println!("error configuring reqwest client"),
-        }
-    }
-
-    #[test]
-    fn test_func_get_lyrics() {
-        let song_url =
-            String::from("https://www.musixmatch.com/lyrics/Taylor-Swift/champagne-problems");
-
-        ////Possibly mock this
-        match reqwest::blocking::Client::builder().build() {
-            Ok(client) => match get_lyrics(&song_url, &client) {
-                Ok(songs) => {
-                    assert_eq!(songs.lyrics_section.contains("Lyrics"), true);
-                    assert_eq!(songs.other_section.contains("Mood"), true);
-                    assert_eq!(songs.other_section.contains("Rating"), true);
-                    assert_eq!(songs.other_section.contains("Meaning"), true);
-                }
-                Err(_) => {
-                    println!(
-                        "{}",
-                        format!("error obtaining lyrics for song {0}", &song_url)
-                    )
-                }
-            },
-            Err(_) => println!("error configuring reqwest client"),
-        }
-    }
-}
-
 fn _link_extractor(response: String) -> Vec<String> {
     let document = scraper::Html::parse_document(&response);
     let lyrics_selector = scraper::Selector::parse("a").unwrap(); // change unwrap
@@ -308,14 +236,14 @@ fn _get_artist_name() -> Vec<String> {
 }
 
 pub fn single_song_scrap(song: &String, client: &reqwest::blocking::Client) {
-    let _ = _single_song_scrap(song, &client);
+    let _ = _single_song_scrap(song, client);
 }
 
 pub fn _single_song_scrap(
     song: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
-    let formed_url = String::from("https://www.musixmatch.com/") + &song.trim_start_matches('/');
+    let formed_url = String::from("https://www.musixmatch.com/") + `song.trim_start_matches('/')`;
     let mut rng = rng();
 
     let random_seconds = rng.random_range(0..1000);
@@ -326,14 +254,14 @@ pub fn _single_song_scrap(
 }
 
 pub fn single_album_scrap(album: &String, client: &reqwest::blocking::Client) {
-    let _ = _single_album_scrap(album, &client);
+    let _ = _single_album_scrap(album, client);
 }
 
 fn _single_album_scrap(
     album: &String,
     client: &reqwest::blocking::Client,
 ) -> Result<(), Box<dyn Error>> {
-    let path = String::from("https://www.musixmatch.com/") + &album.clone().trim_start_matches('/');
+    let path = String::from("https://www.musixmatch.com/") + `album.trim_start_matches('/')`;
     let songs = get_songs(&path, &client)?;
 
     for song in songs {
@@ -357,4 +285,76 @@ fn _single_artist_scrap(
         single_album_scrap(&element, &client);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_func_get_albums() {
+        let artist_url = String::from("https://www.musixmatch.com/artist/Kendrick-Lamar/albums");
+        match reqwest::blocking::Client::builder().build() {
+            Ok(client) => match get_albums(&artist_url, &client) {
+                Ok(albums) => {
+                    for i in albums {
+                        assert_eq!(i.starts_with("/album/"), true);
+                    }
+                }
+                Err(_) => {
+                    println!(
+                        "{}",
+                        format!("error obtaining album for artist {0}", &artist_url)
+                    )
+                }
+            },
+            Err(_) => println!("error configuring reqwest client"),
+        }
+    }
+
+    #[test]
+    fn test_func_get_songs() {
+        let album_url = String::from("https://www.musixmatch.com/artist/Taylor-Swift/album/Taylor-Swift/Taylor-Swift-Big-Machine-Radio-Release-Special");
+        match reqwest::blocking::Client::builder().build() {
+            Ok(client) => match get_songs(&album_url, &client) {
+                Ok(albums) => {
+                    for i in albums {
+                        assert_eq!(i.starts_with("/lyrics/"), true);
+                    }
+                }
+                Err(_) => {
+                    println!(
+                        "{}",
+                        format!("error obtaining lyrics for song {0}", &album_url)
+                    )
+                }
+            },
+            Err(_) => println!("error configuring reqwest client"),
+        }
+    }
+
+    #[test]
+    fn test_func_get_lyrics() {
+        let song_url =
+            String::from("https://www.musixmatch.com/lyrics/Taylor-Swift/champagne-problems");
+
+        ////Possibly mock this
+        match reqwest::blocking::Client::builder().build() {
+            Ok(client) => match get_lyrics(&song_url, &client) {
+                Ok(songs) => {
+                    assert_eq!(songs.lyrics_section.contains("Lyrics"), true);
+                    assert_eq!(songs.other_section.contains("Mood"), true);
+                    assert_eq!(songs.other_section.contains("Rating"), true);
+                    assert_eq!(songs.other_section.contains("Meaning"), true);
+                }
+                Err(_) => {
+                    println!(
+                        "{}",
+                        format!("error obtaining lyrics for song {0}", &song_url)
+                    )
+                }
+            },
+            Err(_) => println!("error configuring reqwest client"),
+        }
+    }
 }
