@@ -19,13 +19,13 @@ jobs:
       - name: Fetch Repository
         uses: actions/checkout@v6
         with: 
-          path: backend
+          path: backend/musixmatch
 
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: cargo build
-        run: cargo b --workspace --all-targets --all-features
+        run: cargo build --all-targets --all-features
 
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
