@@ -19,7 +19,7 @@ jobs:
       - name: Fetch Repository
         uses: actions/checkout@v6
         with: 
-          path: /backend/musixmatch
+          path: backend
 
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
