@@ -215,7 +215,7 @@ fn _get_artist_name() -> Vec<String> {
     _albums
 }
 
-pub fn single_song_scrap(song: &String, client: &reqwest::blocking::Client) {
+pub fn single_song_scrap(song: &str, client: &reqwest::blocking::Client) {
     let _ = _single_song_scrap(song, client);
 }
 
