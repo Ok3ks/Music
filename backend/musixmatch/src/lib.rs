@@ -179,14 +179,14 @@ fn _get_songs(
 }
 
 pub fn get_albums(
-    url: &String,
+    url: &str,
     client: &reqwest::blocking::Client,
 ) -> Result<HashSet<String>, reqwest::Error> {
     _get_albums(url, client)
 }
 
 fn _get_albums(
-    url: &String,
+    url: &str,
     client: &reqwest::blocking::Client,
 ) -> Result<HashSet<String>, reqwest::Error> {
     let response = client.get(url).send()?.text()?;
