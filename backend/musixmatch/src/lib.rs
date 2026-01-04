@@ -94,17 +94,11 @@ fn _get_lyrics_internal(
             let out = match selections.split("Writer") {
                 mut sections => {
                     let Some(lyric_section) = sections.next() else {
-                        return Err(format!(
-                            "Error obtaining lyric section, for {0}",
-                            url
-                        ));
+                        return Err(format!("Error obtaining lyric section, for {0}", url));
                     };
 
                     let Some(other_section) = sections.next() else {
-                        return Err(format!(
-                            "Error obtaining other_section, for {0}",
-                            url
-                        ));
+                        return Err(format!("Error obtaining other_section, for {0}", url));
                     };
 
                     (lyric_section, other_section)
