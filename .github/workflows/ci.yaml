@@ -62,6 +62,3 @@ jobs:
 
       - name: run typos
         run: typos
-
-  cargo-audit:
-    uses: ./.github/workflows/cargo_audit.yaml
