@@ -9,6 +9,14 @@ use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
+#![deny(clippy::indexing_slicing)]
+#![deny(clippy::fallible_impl_from)]
+#![deny(clippy::wildcard_enum_match_arm)]
+#![deny(clippy::unneeded_field_pattern)]
+#![deny(clippy::fn_params_excessive_bools)]
+#![deny(clippy::needless_borrow)]
+#![deny(clippy::match_single_binding)]
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Lyrics {
     pub artist: String,
