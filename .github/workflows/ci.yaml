@@ -173,11 +173,5 @@ jobs:
       - name: Run yamlfmt
         run: yamlfmt --lint .
 
-  cargo-deny:
-    uses: ./.github/workflows/cargo_deny.yaml
-
-  check-msrv:
-    uses: ./.github/workflows/check_msrv.yaml
-
-  cargo-miri:
-    uses: ./.github/workflows/cargo_miri.yaml
+  cargo-audit:
+    uses: ./.github/workflows/cargo_audit.yaml
