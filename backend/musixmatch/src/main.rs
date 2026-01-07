@@ -1,11 +1,20 @@
 use rayon::prelude::*;
 use webscraping::{get_artist_name, single_artist_scrap};
 
-fn main() {
+fn init() -> Result<reqwest::blocking::Client, reqwest::Error> {
+    let client = reqwest::blocking::Client::builder().build()?;
+    Ok(client)
+}
+
+fn main() -> Result<(), reqwest::Error> {
+    let client = init()?;
     let _album_url = get_artist_name();
+
     _album_url
         .into_par_iter()
-        .for_each(|x| single_artist_scrap(x.to_string()));
+        .for_each(|x| single_artist_scrap(&x.to_string(), &client));
+
+    Ok(())
 }
 
 // add rayon now
@@ -21,10 +30,6 @@ fn main() {
 //tests
 
 //frontend (leptos or react)
-
-//understand owned and borrowed references
-
-//unwrap_or_else, match , if let
 
 //connect API to spotify lyrics, search button. to sift music
 
