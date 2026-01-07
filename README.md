@@ -1,4 +1,8 @@
-### Aim
+Proposed features :
+- grep "keywords" to find songs, or similar songs/ similar lines
+- semantic search "keywords" to find similar lines.
+- Use LZ algorithm to find out compression rates/repetition of lyrics.
+- Finetune an auto-regressive language model### Aim
 
 The aim of this project is build an AI Songwriter, with humans using their taste in music to customize generation and select possible options. There are multiple elements involved in creating a song which resonates with audiences - lyrics, beats, artists, theme of song etc.
 
