@@ -1,3 +1,7 @@
 target/
 *.env
 lyrics/
+*.tfvars
+*.tfstate*
+**.terraform**
+**node_modules
