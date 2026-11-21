@@ -1,0 +1,96 @@
+---
+- name: Configure FreeBSD on Hetzner Cloud
+  hosts: freebsd
+  become: true
+  gather_facts: true
+
+  vars:
+    admin_user: deploy
+    ssh_port: 22
+
+  tasks:
+    - name: Update FreeBSD base system
+      ansible.builtin.command: freebsd-update fetch install
+      register: freebsd_update
+      changed_when: "'No updates' not in freebsd_update.stdout"
+      failed_when: false
+      async: 900
+      poll: 30
+
+    - name: Update FreeBSD packages
+      community.general.pkgng:
+        name: "*"
+        state: latest
+        update_cache: true
+
+    - name: Install baseline packages
+      community.general.pkgng:
+        name:
+          - sudo
+          - python3
+          - curl
+          - git
+        state: present
+
+    - name: Create administrative user
+      ansible.builtin.user:
+        name: "{{ admin_user }}"
+        groups: wheel
+        shell: /bin/sh
+        append: true
+        state: present
+
+    - name: Install local SSH public key for admin user
+      ansible.posix.authorized_key:
+        user: "{{ admin_user }}"
+        state: present
+        key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_ed25519.pub') }}"
+
+    - name: Allow wheel group to use sudo
+      ansible.builtin.lineinfile:
+        path: /usr/local/etc/sudoers
+        line: "%wheel ALL=(ALL:ALL) NOPASSWD: ALL"
+        validate: "/usr/local/sbin/visudo -cf %s"
+        state: present
+
+    - name: Configure SSH daemon
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?{{ item.key }}\\s+"
+        line: "{{ item.key }} {{ item.value }}"
+        validate: "/usr/sbin/sshd -t -f %s"
+      loop:
+        - { key: "PermitRootLogin", value: "no" }
+        - { key: "PasswordAuthentication", value: "no" }
+        - { key: "PubkeyAuthentication", value: "yes" }
+      notify: Restart sshd
+
+    - name: Install permissive PF rules
+      ansible.builtin.copy:
+        dest: /etc/pf.conf
+        mode: "0644"
+        content: |
+          set skip on lo0
+          pass all keep state
+      notify: Reload pf
+
+    - name: Enable PF at boot
+      ansible.builtin.sysrc:
+        name: pf_enable
+        value: "YES"
+
+    - name: Start PF
+      ansible.builtin.service:
+        name: pf
+        state: started
+
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+
+    - name: Reload pf
+      ansible.builtin.service:
+        name: pf
+        state: reloaded

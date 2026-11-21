@@ -1,0 +1,57 @@
+---
+- name: Boot server into rescue mode
+  hosts: localhost
+  gather_facts: false
+  vars:
+    server_name: freebsd-01
+  tasks:
+    - name: Enable rescue and restart
+      hetzner.hcloud.server:
+        api_token: "{{ lookup('env', 'HCLOUD_TOKEN') }}"
+        name: "{{ server_name }}"
+        rescue_mode: linux64
+        state: restarted
+
+    - name: Get server details
+      hetzner.hcloud.server_info:
+        api_token: "{{ lookup('env', 'HCLOUD_TOKEN') }}"
+        name: "{{ server_name }}"
+      register: srv
+
+    - name: Add rescue host
+      ansible.builtin.add_host:
+        name: rescue
+        ansible_host: "{{ srv.hcloud_server_info[0].ipv4_address }}"
+        ansible_user: root
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        groups: rescue_hosts
+
+- name: Write FreeBSD image from rescue system
+  hosts: rescue_hosts
+  gather_facts: false
+  vars:
+    freebsd_image_url: "https://download.freebsd.org/releases/VM-IMAGES/14.3-RELEASE/amd64/Latest/FreeBSD-14.3-RELEASE-amd64-ufs.raw.xz"
+    target_disk: /dev/sda
+  tasks:
+    - name: Wait for rescue SSH
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+
+    - name: Download FreeBSD image
+      ansible.builtin.get_url:
+        url: "{{ freebsd_image_url }}"
+        dest: /tmp/freebsd.raw.xz
+        mode: "0644"
+
+    - name: Write image to disk
+      ansible.builtin.shell: |
+        set -e
+        xz -d -c /tmp/freebsd.raw.xz | dd of={{ target_disk }} bs=4M conv=fsync
+        sync
+      args:
+        executable: /bin/bash
+
+    - name: Reboot into FreeBSD
+      ansible.builtin.shell: sleep 2 && reboot
+      async: 1
+      poll: 0

@@ -1,0 +1,7 @@
+---
+- name: Bootstrap FreeBSD
+  hosts: freebsd
+  gather_facts: false
+  tasks:
+    - name: Install Python
+      ansible.builtin.raw: env ASSUME_ALWAYS_YES=yes pkg install -y python3 sudo
