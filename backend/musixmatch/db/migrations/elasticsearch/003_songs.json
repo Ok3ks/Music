@@ -1,0 +1,19 @@
+{
+    "index": "artists_v1",
+    "alias": "artists",
+    "settings": {
+        "number_of_shards": 1,
+        "number_of_replicas": 1
+    },
+    "mappings": {
+        "properties": {
+            "id": { "type": "keyword" },
+            "title": { "type": "text" },
+            "artist_id": { "type": "keyword" },
+            "album_id": { "type": "keyword" },
+            "track_number": { "type": "integer" },
+            "genres": { "type": "keyword" },
+            "release_date": { "type": "date" }
+            }
+        }
+}

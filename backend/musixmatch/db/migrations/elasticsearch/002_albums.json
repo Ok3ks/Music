@@ -1,0 +1,11 @@
+{
+    "index": "albums_v1",
+    "alias": "albums",
+    "properties": {
+        "id": { "type": "keyword" },
+        "title": { "type": "text" },
+        "artist_id": { "type": "keyword" },
+        "release_date": { "type": "date" },
+        "track_ids": { "type": "keyword" }
+      }
+}
