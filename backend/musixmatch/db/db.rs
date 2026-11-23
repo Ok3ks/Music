@@ -1,33 +1,66 @@
-use elasticsearch::*
+use anyhow::Context;
+use elasticsearch::http::transport::{MultiNodeConnectionPool, Transport, TransportBuilder};
+use elasticsearch::http::Url;
+use elasticsearch::indices::{IndicesCreateParts, IndicesExistsParts};
+use elasticsearch::{Elasticsearch, IndexParts};
+use serde::Serialize;
+use serde_json::{json, Value};
+use std::fs;
+use std::path::{Path, PathBuf};
 
-
-pub fn create_client(url: Option<&str>) -> anyhow:Result<(Elasticsearch)> {
-    match url {
-        Some(url)  => {
-            let client = Elasticsearch::default(url)
-        };
-        None => {
-            let client = Elasticsearch::default()
-        };
-    }
+pub fn create_client(url: Option<&str>) -> anyhow::Result<Elasticsearch> {
+    let client = match url {
+        Some(url) => Elasticsearch::new(Transport::single_node(url)?),
+        None => Elasticsearch::new(Transport::single_node("http://localhost:9200")?),
+    };
     Ok(client)
 }
 
-pub fn create_cluster_client(urls: &[&str]) -> Result<Elasticsearch> {
+pub fn create_cluster_client(urls: &[&str]) -> anyhow::Result<Elasticsearch> {
     let nodes = urls
         .iter()
         .map(|url| Ok(Url::parse(url)?))
-        .collect::<Result<Vec<_>>>()?;
+        .collect::<anyhow::Result<Vec<_>>>()?;
 
-    let pool = NodeConnectionPool::new(nodes);
+    let pool = MultiNodeConnectionPool::round_robin(nodes, None);
     let transport = TransportBuilder::new(pool).build()?;
 
     Ok(Elasticsearch::new(transport))
 }
 
-// # test to ensure mapping equals struct
+pub async fn run_migrations(client: &Elasticsearch) -> anyhow::Result<()> {
+    let migrations_path = Path::new("db/migrations/elasticsearch");
+    let mut files: Vec<PathBuf> = fs::read_dir(migrations_path)?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| p.extension().is_some_and(|ext| ext == "json"))
+        .collect();
 
-pub async fn create_index(client: &Elasticsearch, index: &str, mapping: Value) -> Result<()> {
+    files.sort();
+
+    for file_path in files {
+        let content = fs::read_to_string(&file_path)?;
+        let object: Value = serde_json::from_str(&content)?;
+
+        let index = object["index"]
+            .as_str()
+            .with_context(|| format!("{} has no \"index\"", file_path.display()))?;
+        let alias = object["alias"]
+            .as_str()
+            .with_context(|| format!("{} has no \"alias\"", file_path.display()))?;
+
+        let body = json!({
+            "settings": object["settings"],
+            "mappings": object["mappings"],
+            "aliases": { alias: {} }
+        });
+
+        create_index(client, index, body).await?;
+        println!("migrated {index}");
+    }
+    Ok(())
+}
+
+pub async fn create_index(client: &Elasticsearch, index: &str, mapping: Value) -> anyhow::Result<()> {
     let exists = client
         .indices()
         .exists(IndicesExistsParts::Index(&[index]))
@@ -38,16 +71,13 @@ pub async fn create_index(client: &Elasticsearch, index: &str, mapping: Value) -
         return Ok(());
     }
 
-    let mapping: Mapping = Product::to_mapping();
-
     client
         .indices()
         .create(IndicesCreateParts::Index(index))
         .body(&mapping)
         .send()
         .await?
-        .error_for_status_code()
-        .await?;
+        .error_for_status_code()?;
 
     Ok(())
 }
@@ -58,16 +88,13 @@ pub async fn save_to_index<T>(
     index: &str,
     document_id: &str,
     document: &T,
-) -> Result<()>
+) -> anyhow::Result<()>
 where
     T: Serialize + Send + Sync,
 {
-    let response = client
-        .index(IndexParts::IndexId(index, document_id))
+    let _ = client.index(IndexParts::IndexId(index, document_id))
         .body(document)
         .send()
-        .await?
-        .error_for_status_code()
         .await?;
 
     Ok(())

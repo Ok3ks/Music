@@ -1,12 +1,21 @@
 use rayon::prelude::*;
 use webscraping::{get_artist_name, single_artist_scrap};
+use webscraping::db::{create_client, run_migrations};
 
 fn init() -> Result<reqwest::blocking::Client, reqwest::Error> {
     let client = reqwest::blocking::Client::builder().build()?;
     Ok(client)
 }
 
-fn main() -> Result<(), reqwest::Error> {
+
+
+fn main() -> anyhow::Result<()> {
+
+    let es_url = std::env::var("ELASTICSEARCH_URL").ok();
+    let es = create_client(es_url.as_deref())?;
+     
+    tokio::runtime::Runtime::new()?.block_on(run_migrations(&es))?;
+
     let client = init()?;
     let _album_url = get_artist_name();
 
@@ -17,7 +26,6 @@ fn main() -> Result<(), reqwest::Error> {
     Ok(())
 }
 
-// add rayon now
 
 // slam into database?
 

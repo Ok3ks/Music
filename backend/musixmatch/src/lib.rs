@@ -9,6 +9,9 @@ use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
+#[path = "../db/db.rs"]
+pub mod db;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Lyrics {
     pub artist: String,
