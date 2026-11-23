@@ -1,6 +1,6 @@
 {
-    "index": "artists_v1",
-    "alias": "artists",
+    "index": "songs_v1",
+    "alias": "songs",
     "settings": {
         "number_of_shards": 1,
         "number_of_replicas": 1

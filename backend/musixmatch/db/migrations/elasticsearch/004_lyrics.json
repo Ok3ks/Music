@@ -1,0 +1,16 @@
+  {
+      "index": "lyrics_v1",
+      "alias": "lyrics",
+      "settings": {
+          "number_of_shards": 1,
+          "number_of_replicas": 1
+      },
+      "mappings": {
+          "properties": {
+              "artist": { "type": "keyword" },
+              "title": { "type": "text" },
+              "lyrics_section": { "type": "text" },
+              "other_section": { "type": "text" }
+          }
+      }
+  }
