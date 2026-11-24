@@ -1,6 +1,7 @@
 use clap::{ArgAction, Parser};
 use rand::{rng, Rng};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::collections::*;
 use std::error::Error;
 use std::fmt::Display;
@@ -11,6 +12,8 @@ use std::time::Duration;
 
 #[path = "../db/db.rs"]
 pub mod db;
+
+use db::Indexer;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Lyrics {
@@ -25,7 +28,9 @@ impl Lyrics {
         serde_json::to_string(self).unwrap()
     }
 
-    pub fn save(&self) {
+    pub fn save(&self, indexer: &Indexer) {
+        indexer.save("lyrics", &format!("{}/{}", self.artist, self.title), self);
+
         let path = format!("lyrics/{0}/{1}", { &self.artist }, { &self.title });
         let file_path = Path::new(&path);
 
@@ -218,13 +223,14 @@ fn _get_artist_name() -> Vec<String> {
     _albums
 }
 
-pub fn single_song_scrap(song: &str, client: &reqwest::blocking::Client) {
-    let _ = _single_song_scrap(song, client);
+pub fn single_song_scrap(song: &str, client: &reqwest::blocking::Client, indexer: &Indexer) {
+    let _ = _single_song_scrap(song, client, indexer);
 }
 
 pub fn _single_song_scrap(
     song: &str,
     client: &reqwest::blocking::Client,
+    indexer: &Indexer,
 ) -> Result<(), Box<dyn Error>> {
     let formed_url: String = format!(
         "https://www.musixmatch.com/{0}",
@@ -235,18 +241,19 @@ pub fn _single_song_scrap(
 
     let random_seconds = rng.random_range(0..1000);
     let lyric = get_lyrics(&formed_url, client)?;
-    lyric.save();
+    lyric.save(indexer);
     thread::sleep(Duration::from_millis(random_seconds));
     Ok(())
 }
 
-pub fn single_album_scrap(album: &str, client: &reqwest::blocking::Client) {
-    let _ = _single_album_scrap(album, client);
+pub fn single_album_scrap(album: &str, client: &reqwest::blocking::Client, indexer: &Indexer) {
+    let _ = _single_album_scrap(album, client, indexer);
 }
 
 fn _single_album_scrap(
     album: &str,
     client: &reqwest::blocking::Client,
+    indexer: &Indexer,
 ) -> Result<(), Box<dyn Error>> {
     let path: String = format!(
         "https://www.musixmatch.com/{0}",
@@ -255,25 +262,45 @@ fn _single_album_scrap(
     .to_string();
     let songs = get_songs(&path, client)?;
 
+    // album links look like /album/{artist}/{album}
+    let parts = _parse_url_path(album)?;
+    if let (Some(artist), Some(title)) = (parts.get(1), parts.get(2)) {
+        let album_id = format!("{artist}/{title}");
+        let doc = json!({
+            "id": album_id,
+            "title": title,
+            "artist_id": artist,
+            "track_ids": songs,
+        });
+        indexer.save("albums", &album_id, &doc);
+    }
+
     for song in songs {
-        single_song_scrap(&song, client);
+        single_song_scrap(&song, client, indexer);
         thread::sleep(Duration::from_millis(100));
     }
     thread::sleep(Duration::from_millis(10000));
     Ok(())
 }
 
-pub fn single_artist_scrap(artist: &str, client: &reqwest::blocking::Client) {
-    let _ = _single_artist_scrap(artist, client);
+pub fn single_artist_scrap(artist: &str, client: &reqwest::blocking::Client, indexer: &Indexer) {
+    let _ = _single_artist_scrap(artist, client, indexer);
 }
 
 fn _single_artist_scrap(
     artist: &str,
     client: &reqwest::blocking::Client,
+    indexer: &Indexer,
 ) -> Result<(), Box<dyn Error>> {
+    // artist urls look like https://www.musixmatch.com/artist/{name}/albums
+    let parts = _parse_url_path(artist)?;
+    if let Some(name) = parts.get(3) {
+        indexer.save("artists", name, &json!({ "id": name, "name": name }));
+    }
+
     let albums = get_albums(artist, client)?;
     for element in albums {
-        single_album_scrap(&element, client);
+        single_album_scrap(&element, client, indexer);
     }
     Ok(())
 }

@@ -92,11 +92,42 @@ pub async fn save_to_index<T>(
 where
     T: Serialize + Send + Sync,
 {
-    let _ = client.index(IndexParts::IndexId(index, document_id))
+    client
+        .index(IndexParts::IndexId(index, document_id))
         .body(document)
         .send()
-        .await?;
+        .await?
+        .error_for_status_code()?;
 
     Ok(())
+}
+
+/// Blocking wrapper so the (blocking) scraper can write to Elasticsearch.
+pub struct Indexer {
+    client: Elasticsearch,
+    runtime: tokio::runtime::Runtime,
+}
+
+impl Indexer {
+    pub fn new(client: Elasticsearch) -> anyhow::Result<Self> {
+        let runtime = tokio::runtime::Runtime::new()?;
+        Ok(Indexer { client, runtime })
+    }
+
+    pub fn run_migrations(&self) -> anyhow::Result<()> {
+        self.runtime.block_on(run_migrations(&self.client))
+    }
+
+    pub fn save<T>(&self, index: &str, document_id: &str, document: &T)
+    where
+        T: Serialize + Send + Sync,
+    {
+        let result = self
+            .runtime
+            .block_on(save_to_index(&self.client, index, document_id, document));
+        if let Err(e) = result {
+            eprintln!("failed to index {index}/{document_id}: {e}");
+        }
+    }
 }
 
